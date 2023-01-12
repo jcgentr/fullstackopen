@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { Note } from "./components/Note";
+import { notesService } from "./services/notes";
 
 const App = () => {
   const [notes, setNotes] = useState([]);
@@ -9,15 +9,25 @@ const App = () => {
 
   useEffect(() => {
     console.log("effect");
-    axios.get("http://localhost:3001/notes").then((response) => {
-      console.log("promise fulfilled");
-      setNotes(response.data);
+    notesService.getAll().then((initialNotes) => {
+      setNotes(initialNotes);
     });
   }, []);
   console.log("render", notes.length, "notes");
 
   const toggleImportanceOf = (id) => {
-    console.log(`importance of ${id} needs to be toggled`);
+    const note = notes.find((n) => n.id === id);
+    const changedNote = { ...note, important: !note.important };
+
+    notesService
+      .update(id, changedNote)
+      .then((returnedNote) => {
+        setNotes(notes.map((note) => (note.id !== id ? note : returnedNote)));
+      })
+      .catch((error) => {
+        alert(`the note '${note.content}' was already deleted from server`);
+        setNotes(notes.filter((n) => n.id !== id));
+      });
   };
 
   const addNote = (event) => {
@@ -25,11 +35,11 @@ const App = () => {
     const noteObject = {
       content: newNote,
       date: new Date(),
-      important: Math.random() < 0.5,
+      important: Math.random() > 0.5,
     };
 
-    axios.post("http://localhost:3001/notes", noteObject).then((response) => {
-      setNotes(notes.concat(response.data));
+    notesService.create(noteObject).then((returnedNote) => {
+      setNotes(notes.concat(returnedNote));
       setNewNote("");
     });
   };
