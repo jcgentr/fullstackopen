@@ -8,7 +8,7 @@ if (process.argv.length < 3) {
 const username = encodeURIComponent("jcgentr");
 const password = encodeURIComponent(process.argv[2]);
 
-const url = `mongodb+srv://${username}:${password}@fullstackopen.vnsvkfc.mongodb.net/noteApp?retryWrites=true&w=majority`;
+const url = `mongodb+srv://${username}:${password}@fullstackopen.vnsvkfc.mongodb.net/testNoteApp?retryWrites=true&w=majority`;
 
 mongoose.set("strictQuery", false);
 // mongoose
@@ -25,7 +25,7 @@ const noteSchema = new mongoose.Schema({
 const Note = mongoose.model("Note", noteSchema);
 
 const note = new Note({
-  content: "nothing is Easy",
+  content: "HTML is easy",
   important: false,
 });
 
