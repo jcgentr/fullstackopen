@@ -18,3 +18,17 @@ h1 {
   padding: 10px;
   margin-bottom: 10px;
 }
+
+.success {
+  color: green;
+  background: rgb(227, 251, 224);
+  font-size: 20px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+button {
+  cursor: pointer;
+}

@@ -1,5 +1,6 @@
 const notesRouter = require("express").Router();
 const Note = require("../models/note");
+const User = require("../models/user");
 const middleware = require("../utils/middleware");
 
 notesRouter.get("/", async (request, response) => {
@@ -27,9 +28,13 @@ notesRouter.post("/", middleware.userExtractor, async (request, response) => {
   });
 
   const savedNote = await note.save();
+
   // add new noteId to user's notes array
   user.notes = user.notes.concat(savedNote._id);
   await user.save();
+
+  savedNote.user = { ...user };
+  console.log(savedNote);
 
   response.status(201).json(savedNote);
 });
@@ -41,12 +46,15 @@ notesRouter.delete(
     const user = request.user;
     // is this user the owner of the note to be deleted
     const note = await Note.findById(request.params.id);
-    if (note.user.toString() !== user._id.toString()) {
+    if (note.user && note.user.toString() !== user._id.toString()) {
       return response
         .status(401)
         .json({ error: "🚨 can only delete your own notes!" });
     }
+    // delete note
     await Note.findByIdAndRemove(request.params.id);
+    // delete note id from user's notes
+    await User.updateOne({ _id: user._id }, { $pull: { notes: note._id } });
     response.status(204).end();
   }
 );

@@ -1,22 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Footer } from "./components/Footer";
+import { LoginForm } from "./components/LoginForm";
 import { Note } from "./components/Note";
+import { NoteForm } from "./components/NoteForm";
 import { Notification } from "./components/Notification";
+import { Toggleable } from "./components/Toggleable";
 import { notesService } from "./services/notes";
 
 const App = () => {
+  const noteFormRef = useRef();
   const [notes, setNotes] = useState([]);
-  const [newNote, setNewNote] = useState("");
   const [showAll, setShowAll] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [user, setUser] = useState(() => {
+    const loggedInUserJSON = window.localStorage.getItem("loggedInNoteAppUser");
+    if (loggedInUserJSON) {
+      const user = JSON.parse(loggedInUserJSON);
+      notesService.setToken(user.token);
+      return user;
+    } else {
+      return null;
+    }
+  });
 
   useEffect(() => {
-    console.log("effect");
     notesService.getAll().then((initialNotes) => {
       setNotes(initialNotes);
     });
   }, []);
-  console.log("render", notes.length, "notes");
+
+  const handleLogout = () => {
+    window.localStorage.removeItem("loggedInNoteAppUser");
+    setUser(null);
+  };
 
   const toggleImportanceOf = (id) => {
     const note = notes.find((n) => n.id === id);
@@ -28,41 +44,78 @@ const App = () => {
         setNotes(notes.map((note) => (note.id !== id ? note : returnedNote)));
       })
       .catch((error) => {
-        setErrorMessage(
-          `Note '${note.content}' was already removed from server`
-        );
+        console.log(error);
+        setToastMessage({
+          type: "error",
+          message: `Note '${note.content}' was already removed from server`,
+        });
         setTimeout(() => {
-          setErrorMessage(null);
+          setToastMessage(null);
         }, 5000);
         setNotes(notes.filter((n) => n.id !== id));
       });
   };
 
-  const addNote = (event) => {
-    event.preventDefault();
-    const noteObject = {
-      content: newNote,
-      date: new Date(),
-      important: Math.random() > 0.5,
-    };
-
-    notesService.create(noteObject).then((returnedNote) => {
-      setNotes(notes.concat(returnedNote));
-      setNewNote("");
-    });
+  const deleteNote = async (noteId) => {
+    const result = window.confirm("Are you sure you want to delete this note?");
+    if (result) {
+      // user clicked OK
+      try {
+        const respData = await notesService.remove(noteId);
+        setToastMessage({
+          type: "success",
+          message: `Note '${noteId}' successfully deleted`,
+        });
+        setTimeout(() => {
+          setToastMessage(null);
+        }, 5000);
+        console.log(respData);
+        setNotes(notes.filter((n) => n.id !== noteId));
+      } catch (exception) {
+        setToastMessage({
+          type: "error",
+          message: `Note '${noteId}' could not be deleted`,
+        });
+        setTimeout(() => {
+          setToastMessage(null);
+        }, 5000);
+      }
+    } else {
+      // user clicked Cancel
+      // do nothing
+    }
   };
 
   const notesToShow = showAll ? notes : notes.filter((note) => note.important);
 
   return (
     <div>
-      <h1>Promises</h1>
-      <Notification message={errorMessage} />
-      <form onSubmit={addNote}>
-        new note:{" "}
-        <input value={newNote} onChange={(e) => setNewNote(e.target.value)} />
-        <button type="submit">Add</button>
-      </form>
+      <h1>Notes</h1>
+      <Notification toastMessage={toastMessage} />
+
+      {!user && (
+        <Toggleable buttonLabel="log in">
+          <LoginForm setUser={setUser} setToastMessage={setToastMessage} />
+        </Toggleable>
+      )}
+      {user && (
+        <div>
+          <p>
+            <strong>{user.name}</strong> logged in{" "}
+            <button onClick={handleLogout}>Logout</button>
+          </p>
+          <Toggleable buttonLabel="new note" ref={noteFormRef}>
+            <NoteForm
+              setNotes={setNotes}
+              setToastMessage={setToastMessage}
+              hideForm={() => noteFormRef.current.toggleVisibility()}
+            />
+          </Toggleable>
+        </div>
+      )}
+
+      <h2>Notes</h2>
+
       <div>
         <button onClick={() => setShowAll(!showAll)}>
           show {showAll ? "important" : "all"}
@@ -74,6 +127,7 @@ const App = () => {
             key={note.id}
             note={note}
             toggleImportance={() => toggleImportanceOf(note.id)}
+            deleteNote={deleteNote}
           />
         ))}
       </ul>

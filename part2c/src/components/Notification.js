@@ -1,7 +1,8 @@
-export const Notification = ({ message }) => {
-  if (message === null) {
+export const Notification = ({ toastMessage }) => {
+  if (toastMessage === null) {
     return null;
   }
+  const { type, message } = toastMessage;
 
-  return <div className="error">{message}</div>;
+  return <div className={type}>{message}</div>;
 };
