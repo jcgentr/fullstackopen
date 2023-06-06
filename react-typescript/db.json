@@ -1,0 +1,16 @@
+{
+  "notes": [
+    {
+      "id": 1,
+      "content": "Goodbye Earl!"
+    },
+    {
+      "id": 2,
+      "content": "Sugar we're going down swinging"
+    },
+    {
+      "content": "Better regulate bro!",
+      "id": 3
+    }
+  ]
+}
